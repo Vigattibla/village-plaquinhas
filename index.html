@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Village Plaquinhas</title>
+<style>
+  :root {
+    --amarelo: #FBC222;
+    --azul: #0B235D;
+    --azul2: #273250;
+    --bg: #f4f5f7;
+    --card-bg: #fff;
+    --borda: #e1e3e8;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px 16px 60px;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg); color: var(--azul2);
+  }
+  .wrap { max-width: 980px; margin: 0 auto; }
+  h1 { color: var(--azul); font-size: 1.6rem; margin: 0 0 4px; }
+  .sub { color: #6b7280; margin: 0 0 24px; font-size: 0.95rem; }
+  .card {
+    background: var(--card-bg); border: 1px solid var(--borda); border-radius: 12px;
+    padding: 20px; margin-bottom: 20px;
+  }
+  label { font-weight: 600; display: block; margin-bottom: 8px; }
+  textarea {
+    width: 100%; min-height: 220px; padding: 12px; border: 1px solid var(--borda);
+    border-radius: 8px; font-family: inherit; font-size: 0.95rem; resize: vertical;
+  }
+  .hint { font-size: 0.82rem; color: #8a8f98; margin-top: 6px; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+  button {
+    background: var(--azul); color: #fff; border: none; border-radius: 8px;
+    padding: 11px 20px; font-size: 0.95rem; font-weight: 600; cursor: pointer;
+  }
+  button.secondary { background: #fff; color: var(--azul); border: 1px solid var(--azul); }
+  button.gerar { background: var(--amarelo); color: var(--azul); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  button:hover:not(:disabled) { filter: brightness(1.08); }
+  #lista { display: none; }
+  .item-row {
+    display: flex; align-items: center; gap: 10px; padding: 8px 4px;
+    border-bottom: 1px solid var(--borda);
+  }
+  .item-row input[type=text] {
+    flex: 1; border: 1px solid transparent; border-radius: 6px; padding: 6px 8px;
+    font-size: 0.92rem; background: transparent;
+  }
+  .item-row input[type=text]:hover, .item-row input[type=text]:focus {
+    border-color: var(--borda); background: #fafbfc;
+  }
+  .item-row .qty {
+    width: 40px; text-align: center; border: 1px solid var(--borda); border-radius: 6px; padding: 6px 2px;
+  }
+  .item-row .del {
+    background: none; color: #c0392b; padding: 4px 8px; font-size: 1.1rem; font-weight: 400;
+  }
+  .item-row .del:hover { background: #fdecea; }
+  .contagem { font-size: 0.9rem; color: #6b7280; margin: 10px 0; }
+  .add-manual { display: flex; gap: 8px; margin-top: 12px; }
+  .add-manual input { flex: 1; padding: 8px 10px; border: 1px solid var(--borda); border-radius: 6px; }
+  #preview-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 8px; margin-top: 14px;
+  }
+  .mini-card {
+    aspect-ratio: 1150/813; border-radius: 6px; overflow: hidden; position: relative;
+    background-size: cover; box-shadow: 0 1px 3px rgba(0,0,0,.15);
+  }
+  .mini-card span {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    text-align: center; font-weight: 800; color: var(--azul2); font-size: 0.62rem;
+    padding: 6% 8% 22%; line-height: 1.15; text-transform: uppercase;
+  }
+  #status { font-size: 0.88rem; margin-top: 10px; min-height: 1.2em; }
+  #status.err { color: #c0392b; }
+  #status.ok { color: #1a7f37; }
+  footer { text-align: center; color: #9aa0a8; font-size: 0.8rem; margin-top: 30px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🍽️ Village Plaquinhas</h1>
+  <p class="sub">Cole a lista do cardápio (mesmo que venha de WhatsApp, com saudação e tudo) e gere o PDF pronto pra impressão — 8 plaquinhas por folha A4, mesmo padrão visual do resort.</p>
+
+  <div class="card">
+    <label for="texto">Cole o texto aqui</label>
+    <textarea id="texto" placeholder="Ex:
+Bolo formigueiro
+Bolo tradicional com chocolate
+Torta de frango
+Café sem açúcar
+Umas duas de cada"></textarea>
+    <p class="hint">Entende bullets (- * •), saudação solta, linhas de WhatsApp e instruções como "2 de cada" / "3x tudo".</p>
+    <div class="row">
+      <button id="btn-interpretar">Interpretar lista</button>
+    </div>
+    <div id="status"></div>
+  </div>
+
+  <div class="card" id="lista">
+    <label>Confira e ajuste antes de gerar</label>
+    <div class="contagem" id="contagem"></div>
+    <div id="itens"></div>
+    <div class="add-manual">
+      <input type="text" id="novo-item" placeholder="Adicionar item manualmente...">
+      <button class="secondary" id="btn-add">+ Adicionar</button>
+    </div>
+    <div id="preview-grid"></div>
+    <div class="row">
+      <button class="gerar" id="btn-gerar">Gerar PDF</button>
+      <span id="status-gerar" style="align-self:center;"></span>
+    </div>
+  </div>
+
+  <footer>Village Resort MG · plaquinhas de buffet</footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
