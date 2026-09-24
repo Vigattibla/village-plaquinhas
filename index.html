@@ -76,6 +76,20 @@
     text-align: center; font-weight: 800; color: var(--azul2); font-size: 0.62rem;
     padding: 6% 8% 22%; line-height: 1.15; text-transform: uppercase;
   }
+  .preview-label { font-size: 0.82rem; font-weight: 600; color: #8a8f98; margin: 18px 0 6px; }
+  #preview-grid-cavalete {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 8px;
+  }
+  .mini-card-cavalete {
+    aspect-ratio: 275.14/206.35; border-radius: 6px; overflow: hidden; position: relative;
+    background-size: cover; box-shadow: 0 1px 3px rgba(0,0,0,.15);
+  }
+  .mini-card-cavalete span {
+    position: absolute; left: 8%; right: 8%; top: 53%; display: flex; align-items: center;
+    justify-content: center; text-align: center; font-weight: 800; color: var(--azul2);
+    font-size: 0.6rem; line-height: 1.15; text-transform: uppercase;
+  }
   #status { font-size: 0.88rem; margin-top: 10px; min-height: 1.2em; }
   #status.err { color: #c0392b; }
   #status.ok { color: #1a7f37; }
@@ -110,7 +124,10 @@ Umas duas de cada"></textarea>
       <input type="text" id="novo-item" placeholder="Adicionar item manualmente...">
       <button class="secondary" id="btn-add">+ Adicionar</button>
     </div>
+    <p class="preview-label">Pré-visualização — plaquinhas</p>
     <div id="preview-grid"></div>
+    <p class="preview-label">Pré-visualização — cavaletes (dobra ao meio, mesmo texto nas duas metades)</p>
+    <div id="preview-grid-cavalete"></div>
     <div class="row">
       <button class="gerar" id="btn-gerar">Gerar PDF (Plaquinhas)</button>
       <button class="secondary" id="btn-gerar-cavalete">Gerar PDF (Cavaletes)</button>

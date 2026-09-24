@@ -175,6 +175,21 @@ function renderPreview() {
       grid.appendChild(div);
     }
   });
+  renderPreviewCavalete();
+}
+
+function renderPreviewCavalete() {
+  const grid = $("preview-grid-cavalete");
+  grid.innerHTML = "";
+  grupos.forEach(g => {
+    for (let i = 0; i < g.qty; i++) {
+      const div = document.createElement("div");
+      div.className = "mini-card-cavalete";
+      div.style.backgroundImage = "url('assets/base_cavalete.png')";
+      div.innerHTML = `<span>${escapeHtml(g.name.toUpperCase())}</span>`;
+      grid.appendChild(div);
+    }
+  });
 }
 
 function escapeHtml(s) {
