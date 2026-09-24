@@ -186,7 +186,8 @@ function renderPreviewCavalete() {
       const div = document.createElement("div");
       div.className = "mini-card-cavalete";
       div.style.backgroundImage = "url('assets/base_cavalete.png')";
-      div.innerHTML = `<span>${escapeHtml(g.name.toUpperCase())}</span>`;
+      const t = escapeHtml(g.name.toUpperCase());
+      div.innerHTML = `<span class="cav-top">${t}</span><span class="cav-bot">${t}</span>`;
       grid.appendChild(div);
     }
   });
