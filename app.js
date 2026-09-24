@@ -19,6 +19,41 @@ const ROWS_Y = [16.44, 221.16, 425.94, 630.66];
 const CELL_W = 276.0, CELL_H = 195.06;
 const SCALE = CELL_W / CARD_W;
 
+// ---------- geometria do cavalete (espelha gerar_cavalete.py) ----------
+const CAV_CARD_W = 275.14, CAV_CARD_H = 206.35;
+const CAV_FOLD_Y = CAV_CARD_H / 2;
+const CAV_SIZE_MAX = 64.0;
+const CAV_LEADING = 1.05;
+const CAV_CAP_RATIO = 0.70;
+const CAV_DESC = 0.16;
+const CAV_GANHO_MIN = 1.05;
+
+const CAV_MARGIN_IN = 8.0;
+const CAV_TOPO_LIVRE = CAV_CARD_H * (170.0 / 852.0);
+const CAV_BASE_LIVRE = CAV_CARD_H * (690.0 / 852.0);
+
+const CAV_ZONE_BOT_Y0 = CAV_FOLD_Y + CAV_MARGIN_IN;
+const CAV_ZONE_BOT_Y1 = CAV_BASE_LIVRE - CAV_MARGIN_IN;
+const CAV_ZONE_BOT_CY = (CAV_ZONE_BOT_Y0 + CAV_ZONE_BOT_Y1) / 2;
+const CAV_ZONE_BOT_H = CAV_ZONE_BOT_Y1 - CAV_ZONE_BOT_Y0;
+
+const CAV_ZONE_TOP_Y0 = CAV_TOPO_LIVRE + CAV_MARGIN_IN;
+const CAV_ZONE_TOP_Y1 = CAV_FOLD_Y - CAV_MARGIN_IN;
+const CAV_ZONE_TOP_CY = (CAV_ZONE_TOP_Y0 + CAV_ZONE_TOP_Y1) / 2;
+const CAV_ZONE_TOP_H = CAV_ZONE_TOP_Y1 - CAV_ZONE_TOP_Y0;
+
+const CAV_ZONE_W = CAV_CARD_W - 2 * 25.0;
+const CAV_ZONE_CX = CAV_CARD_W / 2;
+const CAV_COLOR = [39 / 255, 50 / 255, 80 / 255];
+
+// grade A4: 6 cavaletes por folha (2 col x 3 lin)
+const CAV_PAGE_W = 595.276, CAV_PAGE_H = 841.89;
+const CAV_GAP_X = 15.0, CAV_GAP_Y = 15.0;
+const CAV_SIDE = (CAV_PAGE_W - (2 * CAV_CARD_W + CAV_GAP_X)) / 2;
+const CAV_TOPBOT = (CAV_PAGE_H - (3 * CAV_CARD_H + 2 * CAV_GAP_Y)) / 2;
+const CAV_COLS_X = [CAV_SIDE, CAV_SIDE + CAV_CARD_W + CAV_GAP_X];
+const CAV_ROWS_Y = [CAV_TOPBOT, CAV_TOPBOT + CAV_CARD_H + CAV_GAP_Y, CAV_TOPBOT + 2 * (CAV_CARD_H + CAV_GAP_Y)];
+
 // ---------- parser heurístico ----------
 function parseText(text) {
   const numWords = { um: 1, uma: 1, dois: 2, duas: 2, tres: 3, "três": 3, quatro: 4, cinco: 5, seis: 6 };
@@ -172,6 +207,7 @@ $("btn-add").addEventListener("click", () => {
 $("novo-item").addEventListener("keydown", e => { if (e.key === "Enter") $("btn-add").click(); });
 
 $("btn-gerar").addEventListener("click", gerarPdf);
+$("btn-gerar-cavalete").addEventListener("click", gerarCavaletesPdf);
 
 // ---------- geração do PDF ----------
 async function fetchBytes(url) {
@@ -249,6 +285,116 @@ function drawCard(page, font, bgImg, ox, oy, text) {
     const pdfY = PAGE_H - (oy + by * SCALE);
     page.drawText(line, { x: pdfX, y: pdfY, size: sz * SCALE, font, color: rgb(...COLOR) });
   });
+}
+
+// ---------- geração do PDF de cavaletes (dobra ao meio, texto invertido em cima) ----------
+function cavWrap(font, words, n) {
+  if (n === 1) return [words.join(" ")];
+  if (words.length < n) return null;
+  let best = null, bestScore = Infinity;
+  const cutCombos = combinations(range(1, words.length), n - 1);
+  for (const cuts of cutCombos) {
+    const idx = [0, ...cuts, words.length];
+    const lines = [];
+    for (let i = 0; i < n; i++) lines.push(words.slice(idx[i], idx[i + 1]).join(" "));
+    const score = Math.max(...lines.map(l => widthAt(font, l, CAV_SIZE_MAX)));
+    if (score < bestScore) { bestScore = score; best = lines; }
+  }
+  return best;
+}
+
+function cavLayout(font, text, zoneW, zoneH) {
+  const words = text.split(/\s+/).filter(Boolean);
+  const opcoes = [];
+  for (const n of [1, 2, 3]) {
+    const lines = cavWrap(font, words, n);
+    if (!lines) continue;
+    const w = Math.max(...lines.map(l => widthAt(font, l, CAV_SIZE_MAX)));
+    let sz = w <= zoneW ? CAV_SIZE_MAX : (CAV_SIZE_MAX * zoneW / w);
+    const pitch = sz * CAV_LEADING;
+    const cap = sz * CAV_CAP_RATIO;
+    const total = cap + pitch * (lines.length - 1) + sz * CAV_DESC;
+    if (total > zoneH) sz *= zoneH / total;
+    opcoes.push([lines, sz]);
+  }
+  let melhor = opcoes[0];
+  for (const opt of opcoes.slice(1)) if (opt[1] > melhor[1] * CAV_GANHO_MIN) melhor = opt;
+  return melhor;
+}
+
+// zona invertida: mesma disposição centrada da zona normal, girada 180° em torno
+// do centro da própria zona — equivalente ao morph(fixed_point, Matrix(180)) do PyMuPDF.
+function cavDrawTextZone(page, font, ox, oy, cy, zoneH, text, rotate180) {
+  const [lines, sz] = cavLayout(font, text, CAV_ZONE_W, zoneH);
+  const pitch = sz * CAV_LEADING;
+  const cap = sz * CAV_CAP_RATIO;
+  const total = cap + pitch * (lines.length - 1);
+  const top = cy - total / 2;
+  const { rgb, degrees } = PDFLib;
+  lines.forEach((line, i) => {
+    const by = top + cap + pitch * i;
+    const bx = CAV_ZONE_CX - widthAt(font, line, sz) / 2;
+    const px = rotate180 ? ox + (2 * CAV_ZONE_CX - bx) : ox + bx;
+    const yTopDown = rotate180 ? oy + (2 * cy - by) : oy + by;
+    const py = CAV_PAGE_H - yTopDown;
+    page.drawText(line, { x: px, y: py, size: sz, font, color: rgb(...CAV_COLOR), rotate: degrees(rotate180 ? 180 : 0) });
+  });
+}
+
+function cavDrawCard(page, font, bgImg, ox, oy, text) {
+  page.drawImage(bgImg, { x: ox, y: CAV_PAGE_H - oy - CAV_CARD_H, width: CAV_CARD_W, height: CAV_CARD_H });
+  const texto = text.toUpperCase();
+  cavDrawTextZone(page, font, ox, oy, CAV_ZONE_BOT_CY, CAV_ZONE_BOT_H, texto, false);
+  cavDrawTextZone(page, font, ox, oy, CAV_ZONE_TOP_CY, CAV_ZONE_TOP_H, texto, true);
+}
+
+async function gerarCavaletesPdf() {
+  const statusEl = $("status-gerar");
+  const btn = $("btn-gerar-cavalete");
+  const itens = [];
+  grupos.forEach(g => { for (let i = 0; i < g.qty; i++) if (g.name.trim()) itens.push(g.name.trim()); });
+
+  if (!itens.length) { statusEl.textContent = "Nada pra gerar."; return; }
+
+  btn.disabled = true;
+  statusEl.textContent = "Gerando PDF de cavaletes...";
+  try {
+    const { PDFDocument } = PDFLib;
+    const pdfDoc = await PDFDocument.create();
+    pdfDoc.registerFontkit(fontkit);
+
+    const [fontBytes, pngBytes] = await Promise.all([
+      fetchBytes("assets/montserrat-700.ttf"),
+      fetchBytes("assets/base_cavalete.png"),
+    ]);
+    const font = await pdfDoc.embedFont(fontBytes, { subset: true });
+    const bgImg = await pdfDoc.embedPng(pngBytes);
+
+    let page = null;
+    itens.forEach((nome, n) => {
+      const slot = n % 6;
+      if (slot === 0) page = pdfDoc.addPage([CAV_PAGE_W, CAV_PAGE_H]);
+      cavDrawCard(page, font, bgImg, CAV_COLS_X[slot % 2], CAV_ROWS_Y[Math.floor(slot / 2)], nome);
+    });
+
+    const bytes = await pdfDoc.save();
+    const blob = new Blob([bytes], { type: "application/pdf" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `cavaletes-${new Date().toISOString().slice(0, 10)}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+
+    statusEl.textContent = `Pronto: ${itens.length} cavaletes, ${Math.ceil(itens.length / 6)} folha(s).`;
+  } catch (err) {
+    console.error(err);
+    statusEl.textContent = "Erro ao gerar PDF: " + err.message;
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 async function gerarPdf() {
