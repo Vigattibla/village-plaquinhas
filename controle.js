@@ -1,5 +1,5 @@
 // ---------- controle geral: o que já foi feito (placa x cavalete), salvo na planilha do Google ----------
-const SHEET_URL = ""; // URL do App da Web do Apps Script (termina em /exec)
+const SHEET_URL = "https://script.google.com/macros/s/AKfycbwZ0O8oiHWK9FsytCDx4MUOaOQemTmmBIL7m-wumEStddqsmpASGFbB6Yy10857HOTe/exec"; // URL do App da Web do Apps Script (termina em /exec)
 const CACHE_KEY = "village-plaquinhas-cache-v2";
 const FILA_KEY = "village-plaquinhas-fila-v2";
 const LEGADO_KEY = "village-plaquinhas-feitos-v1";
@@ -19,7 +19,8 @@ function agregar() {
   [...linhasReg, ...lsGet(FILA_KEY, []).flatMap(p => p.acao === "registrar" ? p.itens : [])].forEach(l => {
     if (!TIPOS[l.tipo]) return;
     const r = reg[l.chave] || (reg[l.chave] = { nome: l.nome });
-    const dia = String(l.data).slice(0, 10);
+    const d = new Date(l.data);
+    const dia = isNaN(d) ? String(l.data).slice(0, 10) : d.toLocaleDateString("sv-SE");
     const t = r[l.tipo] || (r[l.tipo] = { qtd: 0, primeira: dia, ultima: dia });
     t.qtd += l.qtd;
     if (dia < t.primeira) t.primeira = dia;
