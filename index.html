@@ -92,6 +92,21 @@
   }
   .mini-card-cavalete .cav-bot { top: 51%; bottom: 20%; }
   .mini-card-cavalete .cav-top { top: 21%; bottom: 51%; transform: rotate(180deg); }
+  .badge { font-size: 0.7rem; font-weight: 700; padding: 2px 7px; border-radius: 10px; white-space: nowrap; }
+  .badge.placa { background: #fff4d1; color: #8a6300; }
+  .badge.cavalete { background: #e3e8f4; color: var(--azul); }
+  .badge.novo { background: #f1f2f4; color: #8a8f98; font-weight: 600; }
+  .ctrl-top { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .ctrl-top input[type=search] { flex: 1; min-width: 180px; padding: 9px 10px; border: 1px solid var(--borda); border-radius: 8px; font-size: 0.95rem; }
+  .ctrl-top select { padding: 9px; border: 1px solid var(--borda); border-radius: 8px; }
+  #ctrl-tabela { max-height: 420px; overflow: auto; }
+  #ctrl-tabela table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  #ctrl-tabela th { text-align: left; position: sticky; top: 0; background: #fff; padding: 6px; border-bottom: 2px solid var(--borda); }
+  #ctrl-tabela td { padding: 6px; border-bottom: 1px solid var(--borda); }
+  #ctrl-tabela .ok { color: #1a7f37; font-weight: 700; }
+  #ctrl-tabela .nao { color: #c0392b; }
+  .contagem.err { color: #c0392b; }
+  label.file-btn { display: inline-block; margin: 0; background: #fff; color: var(--azul); border: 1px solid var(--azul); border-radius: 8px; padding: 11px 20px; font-size: 0.95rem; font-weight: 600; cursor: pointer; }
   #status { font-size: 0.88rem; margin-top: 10px; min-height: 1.2em; }
   #status.err { color: #c0392b; }
   #status.ok { color: #1a7f37; }
@@ -137,11 +152,34 @@ Umas duas de cada"></textarea>
     </div>
   </div>
 
+  <div class="card" id="controle">
+    <label>Controle — o que já foi feito</label>
+    <p class="hint" style="margin:0 0 10px">Todo PDF gerado entra aqui, separado em placa normal e cavalete. Busque o nome pra saber se já existe.</p>
+    <div class="ctrl-top">
+      <input type="search" id="ctrl-busca" placeholder="Buscar item (ex: tropeiro)">
+      <select id="ctrl-filtro">
+        <option value="todos">Todos</option>
+        <option value="so-placa">Só placa (falta cavalete)</option>
+        <option value="so-cavalete">Só cavalete (falta placa)</option>
+        <option value="ambos">Placa e cavalete</option>
+      </select>
+    </div>
+    <div class="contagem" id="ctrl-conexao"></div>
+    <div class="contagem" id="ctrl-resumo"></div>
+    <div id="ctrl-tabela"></div>
+    <div class="row">
+      <button class="secondary" id="ctrl-csv">Exportar planilha (CSV)</button>
+      <button class="secondary" id="ctrl-atualizar">Atualizar</button>
+    </div>
+    <p class="hint">Registro geral: fica numa planilha do Google, todo mundo vê o mesmo. Se a internet cair, o que foi gerado fica guardado e sobe sozinho depois.</p>
+  </div>
+
   <footer>Village Resort MG · plaquinhas de buffet</footer>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
 <script src="app.js"></script>
+<script src="controle.js"></script>
 </body>
 </html>

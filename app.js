@@ -133,6 +133,7 @@ function render() {
     row.className = "item-row";
     row.innerHTML = `
       <input type="text" value="${escapeHtml(g.name)}" data-i="${i}" class="nome">
+      ${badgesFeito(g.name)}
       <input type="number" min="0" max="50" value="${g.qty}" data-i="${i}" class="qty">
       <button class="del" data-i="${i}" title="remover">✕</button>`;
     cont.appendChild(row);
@@ -404,6 +405,7 @@ async function gerarCavaletesPdf() {
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 5000);
 
+    registrarFeitos(itens, "cavalete");
     statusEl.textContent = `Pronto: ${itens.length} cavaletes, ${Math.ceil(itens.length / 6)} folha(s).`;
   } catch (err) {
     console.error(err);
@@ -453,6 +455,7 @@ async function gerarPdf() {
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 5000);
 
+    registrarFeitos(itens, "placa");
     statusEl.textContent = `Pronto: ${itens.length} plaquinhas, ${Math.ceil(itens.length / 8)} folha(s).`;
   } catch (err) {
     console.error(err);
